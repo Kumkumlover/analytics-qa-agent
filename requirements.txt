@@ -1,0 +1,7 @@
+streamlit
+vanna
+pandas
+braintrust
+autoevals
+google-generativeai
+sqlglot
