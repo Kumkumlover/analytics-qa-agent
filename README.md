@@ -51,3 +51,10 @@ To scale this agent from a local SQLite database to a massive enterprise warehou
 2. **Heavy Reliance on Documentation:** Large warehouses have cryptic column names. We would shift our training pipeline to prioritize thousands of "Golden SQL" examples and plain-english documentation strings mapped to business logic, rather than relying on the LLM to guess what `cust_rev_typ_2` means.
 3. **Cloud Infrastructure Swap:** We would swap our local database connectors for enterprise connectors (`vn.connect_to_snowflake()`). 
 4. **Centralized Caching & Vector DBs:** We would migrate our local ChromaDB to a managed cloud vector database (like Pinecone or pgvector), and upgrade our local FAISS semantic cache to a centralized Redis Vector cache. This ensures horizontal scalability across multiple frontend instances.
+
+## (6) Acknowledgments & Credits
+
+This project stands on the shoulders of giants. We specifically want to credit:
+
+*   **[vanna-ai/vanna](https://github.com/vanna-ai/vanna):** We explicitly cloned and forked the core logic of the Vanna AI repository early in this project. Because the original package is archived and had compatibility issues with our newer Google Gemini stack, cloning it allowed us to heavily customize the inner RAG retrieval mechanisms and prompt generators (`vanna.legacy...`) while preserving their brilliant baseline Text-to-SQL architecture.
+*   **The `planning-with-files` Skill & `Guidelines.md`:** A massive contributor to the speed of this project was our use of the Manus-style persistent planning skill. By maintaining `task.md`, `findings.md`, and `progress.md` on disk, our agent could survive context limits and seamlessly pick up where it left off. Similarly, by dynamically appending our discoveries to a persistent `Guidelines.md` file, the agent achieved "long-term memory," instantly recalling past architectural decisions without hallucinating over long conversations.
