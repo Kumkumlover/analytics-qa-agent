@@ -26,16 +26,24 @@ LLMs naturally hallucinate column names or produce invalid SQL syntax. We solve 
 
 ## (3) How We Evaluate This
 
-We use **Braintrust** to run automated, code-based evaluations against a gauntlet of 45 highly complex test cases spanning 10 analytical categories (e.g., Cohort analysis, complex joins, intentional ambiguity, date formatting).
+We use **Braintrust** to run automated, code-based evaluations against a gauntlet of 45 highly complex test cases spanning 10 analytical categories (e.g., Cohort analysis, complex joins, intentional ambiguity, date formatting). Because hitting the LLM for 45 queries concurrently triggers API rate limits, our eval script includes programmatic throttling (`time.sleep(4.5)`) to respect free-tier quotas while running seamlessly in the background.
 
 Our evaluation loop scores the agent on three strict metrics:
 1. **SQL Validity (100%):** Does the generated SQL compile and run without syntax errors?
-2. **Result Non-Empty (100%):** Did the SQL return an actual dataset, or did it return an empty table because it hallucinated a filtering condition?
+2. **Result Non-Empty (100%):** Did the SQL return an actual dataset, or did it return an empty table because it hallucinated a filtering condition? 
+   > **Note on Edge Cases:** This metric is designed specifically for our "Golden Test Cases" where we *know* the data exists in the database. If a real user asks for data that genuinely doesn't exist (e.g., "Show me sales from 1990"), the SQL will validly return 0 rows. To handle this in a production eval, we would split our dataset into "Positive Cases" (expecting rows) and "Negative Cases" (expecting 0 rows), and dynamically toggle the `result_non_empty` scorer based on the expected outcome.
 3. **Clarification Guardrail (100%):** Did the agent successfully detect intentional ambiguity and refuse to generate SQL?
 
 By tying this into Braintrust, we can iterate on our system prompts and instantly measure regressions.
 
-## (4) How We'd Scale to a 100+ Table Warehouse
+## (4) Methodology & Development Approach
+
+This project was built using an aggressive, **scavenger-style agentic methodology** optimized for speed and persistence:
+* **Rapid Code-Level Iteration:** Instead of manually clicking through UIs to upload datasets, we bypassed the UI and wrote quick Python scripts (`upload_dataset.py`, `eval_analytics_agent.py`) to push data directly into Braintrust and ChromaDB via their APIs. 
+* **Leveraging Pre-built Skills:** We utilized specialized local skills (like the `braintrust-optimization-loop` skill) to instantly set up scorers and evaluation loops without having to read documentation from scratch.
+* **Persistent Learning:** As we encountered bugs (like Vanna's `validate_and_execute` making redundant LLM calls, or `chromadb` locking files), we didn't just fix them temporarily; we appended the fixes to our global guidelines and scripts so the agent never repeats the same mistake.
+
+## (5) How We'd Scale to a 100+ Table Warehouse
 
 To scale this agent from a local SQLite database to a massive enterprise warehouse (e.g., Snowflake, BigQuery) with 100+ tables, we would make four core architectural shifts:
 
