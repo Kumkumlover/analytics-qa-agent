@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
+import pandas as pd
 from agent import setup_agent
 from cache import SemanticCache
 
@@ -38,8 +38,6 @@ for msg in st.session_state.messages:
                 st.code(msg["sql"], language="sql")
         if msg.get("dataframe") is not None:
             st.dataframe(msg["dataframe"])
-        if msg.get("chart") is not None:
-            st.plotly_chart(msg["chart"], use_container_width=True)
 
 # Handle new user input
 if prompt := st.chat_input("Ask a question about your data..."):
@@ -54,8 +52,6 @@ if prompt := st.chat_input("Ask a question about your data..."):
             response_text = ""
             sql = None
             df = None
-            fig = None
-            
             try:
                 # 1. Check Cache
                 cached_sql = semantic_cache.get(prompt)
@@ -87,24 +83,6 @@ if prompt := st.chat_input("Ask a question about your data..."):
                         except Exception as e:
                             st.error(f"Error processing query: {e}")
                             st.stop()
-                
-                # 3. Generate Chart (if not a clarification)
-                if not is_clarification and df is not None and not df.empty:
-                    # Basic auto-charting logic if the LLM doesn't generate one
-                    if len(df.columns) >= 2:
-                        x_col = df.columns[0]
-                        # try to find a numeric y column
-                        numeric_cols = df.select_dtypes(include='number').columns
-                        if len(numeric_cols) > 0:
-                            y_col = numeric_cols[0] if numeric_cols[0] != x_col else (numeric_cols[1] if len(numeric_cols)>1 else numeric_cols[0])
-                            try:
-                                # Simple heuristic for bar vs line
-                                if df[x_col].nunique() < 20:
-                                    fig = px.bar(df, x=x_col, y=y_col)
-                                else:
-                                    fig = px.line(df, x=x_col, y=y_col)
-                            except:
-                                pass
 
             except Exception as e:
                 st.error(f"An error occurred: {e}")
@@ -117,14 +95,11 @@ if prompt := st.chat_input("Ask a question about your data..."):
                 st.code(sql, language="sql")
         if df is not None:
             st.dataframe(df)
-        if fig is not None:
-            st.plotly_chart(fig, use_container_width=True)
             
         # Save to history
         st.session_state.messages.append({
             "role": "assistant", 
             "content": response_text,
             "sql": sql,
-            "dataframe": df,
-            "chart": fig
+            "dataframe": df
         })
