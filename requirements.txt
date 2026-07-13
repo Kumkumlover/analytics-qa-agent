@@ -1,5 +1,5 @@
 streamlit
-vanna
+vanna[gemini,chromadb]
 pandas
 braintrust
 autoevals
