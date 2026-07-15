@@ -40,8 +40,15 @@ class AnalyticsAgent(ChromaDB_VectorStore, GoogleGeminiChat):
 
 def setup_agent(db_path="analytics.db"):
     api_key = os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY')
+    # Fallback: read from Streamlit secrets (for Streamlit Cloud deployment)
     if not api_key:
-        print("WARNING: GEMINI_API_KEY or GOOGLE_API_KEY environment variable not found. You might need it.")
+        try:
+            import streamlit as st
+            api_key = st.secrets.get('GEMINI_API_KEY') or st.secrets.get('GOOGLE_API_KEY')
+        except Exception:
+            pass
+    if not api_key:
+        print("WARNING: GEMINI_API_KEY or GOOGLE_API_KEY not found in env or st.secrets.")
         
     config = {
         'api_key': api_key,
