@@ -9,7 +9,7 @@ st.set_page_config(page_title="Analytics Q&A Agent", layout="wide")
 @st.cache_resource
 def get_backend():
     agent = setup_agent("analytics.db")
-    cache = SemanticCache(threshold=0.25)
+    cache = SemanticCache(threshold=0.6)
     return agent, cache
 
 try:

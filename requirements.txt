@@ -6,4 +6,4 @@ autoevals
 google-generativeai
 sqlglot
 google-cloud-aiplatform
-faiss-cpu
+scikit-learn
