@@ -72,6 +72,7 @@ def setup_agent(db_path="analytics.db"):
         vn.train(documentation="CRITICAL: The country code for the United Kingdom or UK in the database is 'GB'. Whenever querying for the UK, ALWAYS filter by country = 'GB'.")
         vn.train(documentation="CRITICAL: For 'device', the valid values are exclusively lowercase: 'desktop', 'mobile', 'tablet'.")
         vn.train(documentation="CRITICAL: For 'payment_method', the valid values are exclusively: 'card', 'paypal', 'wallet', 'cod'. Do not use 'Credit Card'.")
+        vn.train(documentation="CRITICAL: If asked about the columns or schema of a table, you MUST use a SELECT statement like: SELECT name, type FROM pragma_table_info('table_name'); Do not use PRAGMA directly.")
         vn.train(documentation="DAU (Daily Active Users): Number of unique customer_ids per day based on DATE(start_time) in the sessions table.")
         vn.train(documentation="MAU (Monthly Active Users): Number of unique customer_ids per month based on strftime('%Y-%m', start_time) in the sessions table.")
         vn.train(documentation="D7 Retention: The percentage of customers who had a session on exactly day 7 after their signup_date. Use customers.signup_date and sessions.start_time.")
