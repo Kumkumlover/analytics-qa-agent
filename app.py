@@ -1,31 +1,22 @@
 import streamlit as st
 import pandas as pd
 from agent import setup_agent
+from cache import SemanticCache
 
 st.set_page_config(page_title="Analytics Q&A Agent", layout="wide")
 
-# Initialize agent (core — must succeed)
+# Initialize agent and cache
 @st.cache_resource
-def get_agent():
-    return setup_agent("analytics.db")
-
-# Initialize semantic cache (optional — gracefully degrade if model download hangs)
-@st.cache_resource
-def get_cache():
-    try:
-        from cache import SemanticCache
-        return SemanticCache(threshold=0.25)
-    except Exception as e:
-        print(f"WARNING: Semantic cache failed to load: {e}. Running without cache.")
-        return None
+def get_backend():
+    agent = setup_agent("analytics.db")
+    cache = SemanticCache(threshold=0.25)
+    return agent, cache
 
 try:
-    vn = get_agent()
+    vn, semantic_cache = get_backend()
 except Exception as e:
     st.error(f"Error initializing agent: {e}")
     st.stop()
-
-semantic_cache = get_cache()
 
 # Initialize chat history
 if "messages" not in st.session_state:
@@ -61,10 +52,8 @@ if prompt := st.chat_input("Ask a question about your data..."):
             sql = None
             df = None
             try:
-                # 1. Check Cache (only if cache loaded successfully)
-                cached_sql = None
-                if semantic_cache is not None:
-                    cached_sql = semantic_cache.get(prompt)
+                # 1. Check Cache
+                cached_sql = semantic_cache.get(prompt)
                 
                 if cached_sql:
                     sql = cached_sql
@@ -88,9 +77,7 @@ if prompt := st.chat_input("Ask a question about your data..."):
                         try:
                             sql, df = vn.validate_and_execute(context_prompt)
                             response_text = f"Found {len(df)} results."
-                            # Cache using the short prompt (only if cache loaded)
-                            if semantic_cache is not None:
-                                semantic_cache.put(prompt, sql)
+                            semantic_cache.put(prompt, sql) # Cache using the short prompt
 
                         except Exception as e:
                             st.error(f"Error processing query: {e}")

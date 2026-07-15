@@ -2,17 +2,27 @@ import os
 import json
 import faiss
 import numpy as np
-from sentence_transformers import SentenceTransformer
+import google.generativeai as genai
 
-# Simple semantic cache using sentence-transformers and FAISS
+# Semantic cache using Google Gemini Embeddings + FAISS
+# This avoids downloading the 80MB sentence-transformers model which hangs on Streamlit Cloud.
 class SemanticCache:
-    def __init__(self, index_file="cache.index", map_file="cache_map.json", threshold=0.2):
+    def __init__(self, index_file="cache.index", map_file="cache_map.json", threshold=0.25):
         self.index_file = index_file
         self.map_file = map_file
         self.threshold = threshold
-        # Using a small, fast model
-        self.model = SentenceTransformer('all-MiniLM-L6-v2')
-        self.dimension = 384
+        self.dimension = 768  # text-embedding-004 output dimension
+
+        # Configure Gemini
+        api_key = os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY')
+        if not api_key:
+            try:
+                import streamlit as st
+                api_key = st.secrets.get('GEMINI_API_KEY') or st.secrets.get('GOOGLE_API_KEY')
+            except Exception:
+                pass
+        if api_key:
+            genai.configure(api_key=api_key)
         
         self.cache_store = {}
         
@@ -23,12 +33,20 @@ class SemanticCache:
                 self.cache_store = {int(k): v for k, v in json.load(f).items()}
         else:
             self.index = faiss.IndexFlatL2(self.dimension)
+
+    def _embed(self, text):
+        """Get embedding from Google's text-embedding-004 model."""
+        result = genai.embed_content(
+            model="models/text-embedding-004",
+            content=text
+        )
+        return np.array([result['embedding']], dtype='float32')
             
     def get(self, question):
         if self.index.ntotal == 0:
             return None
             
-        embedding = self.model.encode([question]).astype('float32')
+        embedding = self._embed(question)
         distances, indices = self.index.search(embedding, 1)
         
         # distance in L2; lower is more similar
@@ -41,7 +59,7 @@ class SemanticCache:
         return None
         
     def put(self, question, sql):
-        embedding = self.model.encode([question]).astype('float32')
+        embedding = self._embed(question)
         pos = self.index.ntotal
         
         self.index.add(embedding)

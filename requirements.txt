@@ -7,4 +7,3 @@ google-generativeai
 sqlglot
 google-cloud-aiplatform
 faiss-cpu
-sentence-transformers
